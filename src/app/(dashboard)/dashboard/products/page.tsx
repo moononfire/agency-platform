@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/lib/db";
 import { products, tenants } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
