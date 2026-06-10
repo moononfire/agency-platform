@@ -158,8 +158,12 @@ export async function createTenant(
         services: (formData.get("services") as string) || "",
       }),
     });
-    if (!res.ok) {
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!res.ok || !contentType.includes("application/json")) {
       const body = await res.text();
+      if (!contentType.includes("application/json")) {
+        return { error: `Aplikacja (${product.appUrl}) zwróciła HTML zamiast JSON — prawdopodobnie blokuje requesty (middleware auth?). Sprawdź czy /api/setup jest dostępny bez logowania.` };
+      }
       return { error: `Błąd tworzenia konta admina (${res.status}): ${body}` };
     }
   } catch (e) {
