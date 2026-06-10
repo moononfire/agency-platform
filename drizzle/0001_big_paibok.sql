@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "app_url" text DEFAULT '' NOT NULL;

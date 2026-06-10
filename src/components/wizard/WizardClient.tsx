@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { createTenant } from "@/app/actions/tenants";
 import { Button } from "@/components/ui/button";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const SERVICES = [
   "Strzyżenie damskie",
@@ -88,6 +88,18 @@ export function WizardClient({
   );
   const [services, setServices] = useQueryState(
     "sv",
+    parseAsString.withDefault("")
+  );
+  const [adminName, setAdminName] = useQueryState(
+    "an",
+    parseAsString.withDefault("")
+  );
+  const [adminEmail, setAdminEmail] = useQueryState(
+    "ae",
+    parseAsString.withDefault("")
+  );
+  const [adminPassword, setAdminPassword] = useQueryState(
+    "ap",
     parseAsString.withDefault("")
   );
 
@@ -314,6 +326,61 @@ export function WizardClient({
 
       {step === 6 && (
         <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Konto admina</h2>
+          <p className="text-sm text-muted-foreground">
+            Pierwsze konto do logowania w aplikacji klienta.
+          </p>
+          <div>
+            <label className={labelClass}>
+              Imię i nazwisko <span className="text-destructive">*</span>
+            </label>
+            <input
+              className={fieldClass}
+              value={adminName}
+              onChange={(e) => setAdminName(e.target.value)}
+              placeholder="Anna Kowalska"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>
+              Email logowania <span className="text-destructive">*</span>
+            </label>
+            <input
+              className={fieldClass}
+              type="email"
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+              placeholder="anna@salon-anna.pl"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>
+              Hasło <span className="text-destructive">*</span>
+            </label>
+            <input
+              className={fieldClass}
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Minimum 8 znaków"
+            />
+          </div>
+          <div className="flex justify-between pt-2">
+            <Button variant="outline" onClick={prev}>
+              ← Wstecz
+            </Button>
+            <Button
+              onClick={next}
+              disabled={!adminName || !adminEmail || adminPassword.length < 8}
+            >
+              Dalej →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 7 && (
+        <div className="space-y-4">
           <h2 className="text-lg font-semibold">Potwierdzenie</h2>
           <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
             <Row label="Firma" value={businessName} />
@@ -346,6 +413,7 @@ export function WizardClient({
                 value={selectedServices.join(", ")}
               />
             )}
+            <Row label="Admin" value={adminEmail} />
           </div>
 
           {state?.error && (
@@ -367,6 +435,9 @@ export function WizardClient({
             <input type="hidden" name="logoUrl" value={logoUrl} />
             <input type="hidden" name="primaryColor" value={primaryColor} />
             <input type="hidden" name="services" value={services} />
+            <input type="hidden" name="adminName" value={adminName} />
+            <input type="hidden" name="adminEmail" value={adminEmail} />
+            <input type="hidden" name="adminPassword" value={adminPassword} />
             <div className="flex justify-between pt-2">
               <Button
                 type="button"

@@ -19,13 +19,14 @@ export async function createProduct(
   const vercelProjectId = (formData.get("vercelProjectId") as string)?.trim();
   const vercelToken = (formData.get("vercelToken") as string)?.trim();
   const baseDomain = (formData.get("baseDomain") as string)?.trim().toLowerCase();
+  const appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
 
-  if (!name || !vercelProjectId || !vercelToken || !baseDomain) {
+  if (!name || !vercelProjectId || !vercelToken || !baseDomain || !appUrl) {
     return { error: "Wypełnij wszystkie pola" };
   }
 
   const id = crypto.randomUUID();
-  await db.insert(products).values({ id, name, vercelProjectId, vercelToken, baseDomain });
+  await db.insert(products).values({ id, name, vercelProjectId, vercelToken, baseDomain, appUrl });
 
   revalidatePath("/dashboard/products");
   redirect(`/dashboard/products/${id}`);
@@ -57,9 +58,15 @@ export async function createTenant(
   const logoUrl = (formData.get("logoUrl") as string)?.trim() || undefined;
   const primaryColor =
     (formData.get("primaryColor") as string)?.trim() || undefined;
+  const adminName = (formData.get("adminName") as string)?.trim();
+  const adminEmail = (formData.get("adminEmail") as string)?.trim();
+  const adminPassword = (formData.get("adminPassword") as string)?.trim();
 
   if (!businessName || !email || !slug) {
     return { error: "Wypełnij wymagane pola: nazwa firmy, email, subdomena" };
+  }
+  if (!adminName || !adminEmail || !adminPassword) {
+    return { error: "Wypełnij dane konta admina" };
   }
 
   if (!/^[a-z0-9-]+$/.test(slug)) {
@@ -130,6 +137,19 @@ export async function createTenant(
     .update(tenantOnboardings)
     .set({ completedAt: new Date() })
     .where(eq(tenantOnboardings.tenantId, tenantId));
+
+  try {
+    await fetch(`${product.appUrl}/api/setup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-agency-secret": process.env.AGENCY_API_SECRET!,
+      },
+      body: JSON.stringify({ tenantId, adminName, adminEmail, adminPassword }),
+    });
+  } catch (e) {
+    console.error("Failed to create admin account:", e);
+  }
 
   revalidatePath(`/dashboard/products/${productId}`);
   redirect(`/dashboard/clients/${tenantId}/domain`);

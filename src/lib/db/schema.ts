@@ -20,6 +20,7 @@ export const products = pgTable("products", {
   vercelProjectId: text("vercel_project_id").notNull(),
   vercelToken: text("vercel_token").notNull(),
   baseDomain: text("base_domain").notNull(),
+  appUrl: text("app_url").notNull().default(""),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

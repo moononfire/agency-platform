@@ -83,6 +83,21 @@ export default function NewProductPage() {
           </p>
         </div>
 
+        <div>
+          <label className={labelClass}>
+            URL wdrożenia <span className="text-destructive">*</span>
+          </label>
+          <input
+            name="appUrl"
+            className={fieldClass}
+            placeholder="https://hair-style.vercel.app"
+            required
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Bazowy URL aplikacji — używany do API setup przy tworzeniu klientów.
+          </p>
+        </div>
+
         {state?.error && (
           <p className="text-sm text-destructive rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
             {state.error}
