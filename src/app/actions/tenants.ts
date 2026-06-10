@@ -1,0 +1,187 @@
+"use server";
+
+import { db } from "@/lib/db";
+import { products, tenants, tenantOnboardings } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { addDomain, removeDomain } from "@/lib/vercel-api";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+
+export async function createProduct(
+  _prevState: { error: string } | null,
+  formData: FormData
+): Promise<{ error: string }> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const name = (formData.get("name") as string)?.trim();
+  const vercelProjectId = (formData.get("vercelProjectId") as string)?.trim();
+  const vercelToken = (formData.get("vercelToken") as string)?.trim();
+  const baseDomain = (formData.get("baseDomain") as string)?.trim().toLowerCase();
+
+  if (!name || !vercelProjectId || !vercelToken || !baseDomain) {
+    return { error: "Wypełnij wszystkie pola" };
+  }
+
+  const id = crypto.randomUUID();
+  await db.insert(products).values({ id, name, vercelProjectId, vercelToken, baseDomain });
+
+  revalidatePath("/dashboard/products");
+  redirect(`/dashboard/products/${id}`);
+}
+
+export async function createTenant(
+  productId: string,
+  _prevState: { error: string } | null,
+  formData: FormData
+): Promise<{ error: string }> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1);
+
+  if (!product) return { error: "Produkt nie istnieje" };
+
+  const businessName = (formData.get("businessName") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim();
+  const phone = (formData.get("phone") as string)?.trim() || undefined;
+  const address = (formData.get("address") as string)?.trim() || undefined;
+  const slug = (formData.get("slug") as string)?.trim().toLowerCase();
+  const customDomain =
+    (formData.get("customDomain") as string)?.trim() || undefined;
+  const logoUrl = (formData.get("logoUrl") as string)?.trim() || undefined;
+  const primaryColor =
+    (formData.get("primaryColor") as string)?.trim() || undefined;
+
+  if (!businessName || !email || !slug) {
+    return { error: "Wypełnij wymagane pola: nazwa firmy, email, subdomena" };
+  }
+
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    return {
+      error: "Subdomena może zawierać tylko małe litery, cyfry i myślniki",
+    };
+  }
+
+  const existing = await db
+    .select({ id: tenants.id })
+    .from(tenants)
+    .where(eq(tenants.slug, slug))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return { error: "Ta subdomena jest już zajęta" };
+  }
+
+  const tenantId = crypto.randomUUID();
+
+  await db.insert(tenants).values({
+    id: tenantId,
+    productId,
+    slug,
+    customDomain,
+    status: "pending",
+    businessName,
+    email,
+    phone,
+    address,
+    logoUrl,
+    primaryColor,
+  });
+
+  await db.insert(tenantOnboardings).values({
+    tenantId,
+    currentStep: "6",
+  });
+
+  try {
+    await addDomain(
+      product.vercelProjectId,
+      product.vercelToken,
+      `${slug}.${product.baseDomain}`
+    );
+  } catch (e) {
+    console.error("Failed to add subdomain:", e);
+  }
+
+  if (customDomain) {
+    try {
+      await addDomain(
+        product.vercelProjectId,
+        product.vercelToken,
+        customDomain
+      );
+    } catch (e) {
+      console.error("Failed to add custom domain:", e);
+    }
+  }
+
+  await db
+    .update(tenants)
+    .set({ status: "active" })
+    .where(eq(tenants.id, tenantId));
+
+  await db
+    .update(tenantOnboardings)
+    .set({ completedAt: new Date() })
+    .where(eq(tenantOnboardings.tenantId, tenantId));
+
+  revalidatePath(`/dashboard/products/${productId}`);
+  redirect(`/dashboard/clients/${tenantId}/domain`);
+}
+
+export async function deleteTenant(tenantId: string, _formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const [tenant] = await db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+
+  if (!tenant) return;
+
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, tenant.productId))
+    .limit(1);
+
+  if (product) {
+    try {
+      await removeDomain(
+        product.vercelProjectId,
+        product.vercelToken,
+        `${tenant.slug}.${product.baseDomain}`
+      );
+    } catch (e) {
+      console.error("Failed to remove subdomain:", e);
+    }
+
+    if (tenant.customDomain) {
+      try {
+        await removeDomain(
+          product.vercelProjectId,
+          product.vercelToken,
+          tenant.customDomain
+        );
+      } catch (e) {
+        console.error("Failed to remove custom domain:", e);
+      }
+    }
+  }
+
+  await db
+    .delete(tenantOnboardings)
+    .where(eq(tenantOnboardings.tenantId, tenantId));
+  await db.delete(tenants).where(eq(tenants.id, tenantId));
+
+  revalidatePath(`/dashboard/products/${tenant.productId}`);
+  redirect(`/dashboard/products/${tenant.productId}`);
+}
