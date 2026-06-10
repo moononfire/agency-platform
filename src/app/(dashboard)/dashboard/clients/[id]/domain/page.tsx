@@ -134,7 +134,15 @@ export default async function DomainPage({
       {onboarding && !onboarding.dnsVerified && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
           DNS jeszcze niezweryfikowany. Po skonfigurowaniu rekordów DNS
-          weryfikacja następuje automatycznie (do 48h).
+          weryfikacja następuje automatycznie (do 48h).{" "}
+          <a
+            href="https://vercel.com/vs-projects-24dfb18b/hair-style/settings/domains"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline font-medium"
+          >
+            Sprawdź w Vercel →
+          </a>
         </div>
       )}
 

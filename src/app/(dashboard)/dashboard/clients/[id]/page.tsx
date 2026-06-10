@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { deleteTenant } from "@/app/actions/tenants";
+import { DeleteClientButton } from "@/components/DeleteClientButton";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Oczekuje",
@@ -143,11 +144,7 @@ export default async function ClientPage({
       )}
 
       <div className="flex items-center gap-3 pt-2">
-        <form action={deleteAction}>
-          <Button variant="destructive" size="sm" type="submit">
-            Usuń klienta
-          </Button>
-        </form>
+        <DeleteClientButton action={deleteAction} />
       </div>
     </div>
   );

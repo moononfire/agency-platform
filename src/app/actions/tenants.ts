@@ -138,21 +138,53 @@ export async function createTenant(
     .set({ completedAt: new Date() })
     .where(eq(tenantOnboardings.tenantId, tenantId));
 
+  const agencySecret = process.env.AGENCY_API_SECRET;
+  if (!agencySecret) {
+    return { error: "Brak AGENCY_API_SECRET w zmiennych środowiskowych agencji" };
+  }
+
   try {
-    await fetch(`${product.appUrl}/api/setup`, {
+    const res = await fetch(`${product.appUrl}/api/setup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-agency-secret": process.env.AGENCY_API_SECRET!,
+        "x-agency-secret": agencySecret,
       },
-      body: JSON.stringify({ tenantId, adminName, adminEmail, adminPassword }),
+      body: JSON.stringify({
+        tenantId,
+        adminName,
+        adminEmail,
+        adminPassword,
+        services: (formData.get("services") as string) || "",
+      }),
     });
+    if (!res.ok) {
+      const body = await res.text();
+      return { error: `Błąd tworzenia konta admina (${res.status}): ${body}` };
+    }
   } catch (e) {
-    console.error("Failed to create admin account:", e);
+    return { error: `Nie można połączyć się z aplikacją (${product.appUrl}): ${e}` };
   }
 
   revalidatePath(`/dashboard/products/${productId}`);
   redirect(`/dashboard/clients/${tenantId}/domain`);
+}
+
+export async function updateProduct(
+  productId: string,
+  _prevState: { error: string } | null,
+  formData: FormData
+): Promise<{ error: string }> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
+  if (!appUrl) return { error: "Podaj URL aplikacji" };
+
+  await db.update(products).set({ appUrl }).where(eq(products.id, productId));
+
+  revalidatePath(`/dashboard/products/${productId}`);
+  return { error: "" };
 }
 
 export async function deleteTenant(tenantId: string, _formData: FormData) {

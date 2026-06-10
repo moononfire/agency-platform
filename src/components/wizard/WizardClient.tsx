@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createTenant } from "@/app/actions/tenants";
 import { Button } from "@/components/ui/button";
 
@@ -98,10 +98,7 @@ export function WizardClient({
     "ae",
     parseAsString.withDefault("")
   );
-  const [adminPassword, setAdminPassword] = useQueryState(
-    "ap",
-    parseAsString.withDefault("")
-  );
+  const [adminPassword, setAdminPassword] = useState("");
 
   const boundAction = createTenant.bind(null, productId);
   const [state, action, pending] = useActionState(boundAction, null);

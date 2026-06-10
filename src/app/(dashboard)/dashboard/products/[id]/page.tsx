@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
+import { EditAppUrlForm } from "@/components/EditAppUrlForm";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Oczekuje",
@@ -57,6 +58,8 @@ export default async function ProductPage({
           <Button>+ Dodaj klienta</Button>
         </Link>
       </div>
+
+      <EditAppUrlForm productId={id} currentAppUrl={product.appUrl} />
 
       {rows.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
