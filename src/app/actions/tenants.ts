@@ -19,7 +19,8 @@ export async function createProduct(
   const vercelProjectId = (formData.get("vercelProjectId") as string)?.trim();
   const vercelToken = (formData.get("vercelToken") as string)?.trim();
   const baseDomain = (formData.get("baseDomain") as string)?.trim().toLowerCase();
-  const appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
+  let appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
+  if (appUrl && !appUrl.startsWith("http")) appUrl = `https://${appUrl}`;
 
   if (!name || !vercelProjectId || !vercelToken || !baseDomain || !appUrl) {
     return { error: "Wypełnij wszystkie pola" };
@@ -152,6 +153,7 @@ export async function createTenant(
       },
       body: JSON.stringify({
         tenantId,
+        slug,
         adminName,
         adminEmail,
         adminPassword,
