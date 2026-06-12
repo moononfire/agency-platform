@@ -17,6 +17,17 @@ async function vercelFetch(path: string, options: RequestInit = {}) {
   });
   if (!res.ok) {
     const body = await res.text();
+    let parsed: Record<string, unknown> | null = null;
+    try { parsed = JSON.parse(body); } catch {}
+    const code = (parsed as { error?: { code?: string } } | null)?.error?.code;
+    const isInvalidToken = code === "forbidden" ||
+      (parsed as { error?: { invalidToken?: boolean } } | null)?.error?.invalidToken === true;
+    if (isInvalidToken) {
+      throw new Error(
+        `Vercel API ${res.status}: token VERCEL_TOKEN jest nieważny lub wygasł. ` +
+        `Wygeneruj nowy token na vercel.com/account/tokens i zaktualizuj zmienną VERCEL_TOKEN w projekcie agency-platform na Vercelu.`
+      );
+    }
     throw new Error(`Vercel API ${res.status}: ${body}`);
   }
   return res.json();

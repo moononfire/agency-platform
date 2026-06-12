@@ -16,9 +16,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  active: "bg-green-100 text-green-800",
-  suspended: "bg-red-100 text-red-800",
+  pending: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
+  active: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200",
+  suspended: "bg-red-100 text-red-700 ring-1 ring-red-200",
 };
 
 export default async function ClientPage({
@@ -53,16 +53,19 @@ export default async function ClientPage({
   const deleteAction = deleteTenant.bind(null, id);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-7">
+      <div className="flex items-start justify-between">
         <div>
           <Link
             href={`/dashboard/products/${tenant.productId}`}
-            className="text-sm text-muted-foreground hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
           >
-            ← {product?.name ?? "Produkt"}
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            {product?.name ?? "Produkt"}
           </Link>
-          <h1 className="text-2xl font-semibold mt-1">{tenant.businessName}</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{tenant.businessName}</h1>
         </div>
         <span
           className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${STATUS_COLOR[tenant.status ?? "pending"]}`}
@@ -71,10 +74,17 @@ export default async function ClientPage({
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="bg-white rounded-xl border p-6 space-y-4">
-          <h2 className="font-semibold">Dane firmy</h2>
-          <dl className="space-y-2 text-sm">
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+            </span>
+            Dane firmy
+          </h2>
+          <dl className="space-y-3 text-sm">
             <Field label="Email" value={tenant.email} />
             {tenant.phone && <Field label="Telefon" value={tenant.phone} />}
             {tenant.address && <Field label="Adres" value={tenant.address} />}
@@ -83,29 +93,34 @@ export default async function ClientPage({
                 <dt className="text-muted-foreground w-28 shrink-0">Kolor</dt>
                 <dd className="flex items-center gap-2">
                   <div
-                    className="w-4 h-4 rounded border"
+                    className="w-4 h-4 rounded-full border border-border shadow-sm"
                     style={{ backgroundColor: tenant.primaryColor }}
                   />
-                  <span className="font-mono">{tenant.primaryColor}</span>
+                  <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{tenant.primaryColor}</span>
                 </dd>
               </div>
             )}
           </dl>
         </div>
 
-        <div className="bg-white rounded-xl border p-6 space-y-4">
-          <h2 className="font-semibold">Domeny</h2>
-          <dl className="space-y-2 text-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+              </svg>
+            </span>
+            Domeny
+          </h2>
+          <dl className="space-y-3 text-sm">
             <div className="flex items-start gap-2">
               <dt className="text-muted-foreground w-28 shrink-0">Subdomena</dt>
-              <dd className="font-mono">{subdomain}</dd>
+              <dd className="font-mono text-xs bg-muted px-2 py-1 rounded-md">{subdomain}</dd>
             </div>
             {tenant.customDomain && (
               <div className="flex items-start gap-2">
-                <dt className="text-muted-foreground w-28 shrink-0">
-                  Własna domena
-                </dt>
-                <dd className="font-mono">{tenant.customDomain}</dd>
+                <dt className="text-muted-foreground w-28 shrink-0">Własna domena</dt>
+                <dd className="font-mono text-xs bg-muted px-2 py-1 rounded-md">{tenant.customDomain}</dd>
               </div>
             )}
           </dl>
@@ -118,9 +133,16 @@ export default async function ClientPage({
       </div>
 
       {onboarding && (
-        <div className="bg-white rounded-xl border p-6 space-y-2">
-          <h2 className="font-semibold">Onboarding</h2>
-          <dl className="text-sm space-y-2">
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            Onboarding
+          </h2>
+          <dl className="text-sm space-y-3">
             {onboarding.completedAt && (
               <Field
                 label="Ukończono"
@@ -131,11 +153,15 @@ export default async function ClientPage({
               <dt className="text-muted-foreground w-28 shrink-0">DNS</dt>
               <dd>
                 {onboarding.dnsVerified ? (
-                  <span className="text-green-700 font-medium">
+                  <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                     Zweryfikowany
                   </span>
                 ) : (
-                  <span className="text-yellow-700">Oczekuje weryfikacji</span>
+                  <span className="inline-flex items-center gap-1 text-amber-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                    Oczekuje weryfikacji
+                  </span>
                 )}
               </dd>
             </div>
@@ -154,7 +180,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start gap-2">
       <dt className="text-muted-foreground w-28 shrink-0">{label}</dt>
-      <dd>{value}</dd>
+      <dd className="text-foreground">{value}</dd>
     </div>
   );
 }

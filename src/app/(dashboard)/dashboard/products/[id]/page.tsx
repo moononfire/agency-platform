@@ -15,9 +15,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  active: "bg-green-100 text-green-800",
-  suspended: "bg-red-100 text-red-800",
+  pending: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
+  active: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200",
+  suspended: "bg-red-100 text-red-700 ring-1 ring-red-200",
 };
 
 export default async function ProductPage({
@@ -42,17 +42,20 @@ export default async function ProductPage({
     .orderBy(tenants.createdAt);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-7">
+      <div className="flex items-start justify-between">
         <div>
           <Link
             href="/dashboard/products"
-            className="text-sm text-muted-foreground hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
           >
-            ← Produkty
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            Produkty
           </Link>
-          <h1 className="text-2xl font-semibold mt-1">{product.name}</h1>
-          <p className="text-sm text-muted-foreground">{product.baseDomain}</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{product.name}</h1>
+          <p className="text-sm text-muted-foreground font-mono mt-0.5">{product.baseDomain}</p>
         </div>
         <Link href={`/dashboard/products/${id}/new`}>
           <Button>+ Dodaj klienta</Button>
@@ -62,51 +65,61 @@ export default async function ProductPage({
       <EditAppUrlForm productId={id} currentAppUrl={product.appUrl} />
 
       {rows.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          Brak klientów. Dodaj pierwszego.
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-2xl border border-dashed">
+          <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center mb-3">
+            <span className="text-xl">👥</span>
+          </div>
+          <p className="font-semibold text-foreground">Brak klientów</p>
+          <p className="text-sm text-muted-foreground mt-1">Dodaj pierwszego klienta.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Klienci</p>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {rows.length}
+            </span>
+          </div>
           <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50">
+            <thead className="border-b border-border bg-muted/50">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">Firma</th>
-                <th className="text-left px-4 py-3 font-medium">Subdomena</th>
-                <th className="text-left px-4 py-3 font-medium">
-                  Własna domena
-                </th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th className="text-left px-4 py-3 font-medium">Data</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Firma</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Subdomena</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden md:table-cell">Własna domena</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Data</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((t) => (
                 <tr
                   key={t.id}
-                  className="border-b last:border-0 hover:bg-gray-50"
+                  className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3.5">
                     <Link
                       href={`/dashboard/clients/${t.id}`}
-                      className="font-medium hover:underline"
+                      className="font-medium text-foreground hover:text-primary transition-colors"
                     >
                       {t.businessName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
-                    {t.slug}.{product.baseDomain}
+                  <td className="px-5 py-3.5">
+                    <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                      {t.slug}.{product.baseDomain}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {t.customDomain ?? "—"}
+                  <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell">
+                    {t.customDomain ?? <span className="text-muted-foreground/50">—</span>}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3.5">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[t.status ?? "pending"]}`}
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLOR[t.status ?? "pending"]}`}
                     >
                       {STATUS_LABEL[t.status ?? "pending"]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-5 py-3.5 text-muted-foreground text-xs hidden lg:table-cell">
                     {t.createdAt
                       ? new Date(t.createdAt).toLocaleDateString("pl-PL")
                       : "—"}

@@ -114,17 +114,25 @@ export async function createTenant(
     currentStep: "6",
   });
 
+  const subdomain = `${slug}.${product.baseDomain}`;
   try {
-    await addDomain(product.vercelProjectId, `${slug}.${product.baseDomain}`);
+    await addDomain(product.vercelProjectId, subdomain);
+    console.log(`[createTenant] subdomain added: ${subdomain}`);
   } catch (e) {
-    console.error("Failed to add subdomain:", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[createTenant] Failed to add subdomain ${subdomain}:`, msg);
+    if (msg.includes("nieważny") || msg.includes("invalidToken") || msg.includes("403")) {
+      return { error: `Nie można dodać subdomeny: ${msg}` };
+    }
   }
 
   if (customDomain) {
     try {
       await addDomain(product.vercelProjectId, customDomain);
+      console.log(`[createTenant] custom domain added: ${customDomain}`);
     } catch (e) {
-      console.error("Failed to add custom domain:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[createTenant] Failed to add custom domain ${customDomain}:`, msg);
     }
   }
 
@@ -143,8 +151,10 @@ export async function createTenant(
     return { error: "Brak AGENCY_API_SECRET w zmiennych środowiskowych agencji" };
   }
 
+  const setupUrl = `${product.appUrl}/api/setup`;
+  console.log(`[createTenant] calling setup API: ${setupUrl}`);
   try {
-    const res = await fetch(`${product.appUrl}/api/setup`, {
+    const res = await fetch(setupUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -161,15 +171,30 @@ export async function createTenant(
       }),
     });
     const contentType = res.headers.get("content-type") ?? "";
-    if (!res.ok || !contentType.includes("application/json")) {
-      const body = await res.text();
-      if (!contentType.includes("application/json")) {
-        return { error: `Aplikacja (${product.appUrl}) zwróciła HTML zamiast JSON — prawdopodobnie blokuje requesty (middleware auth?). Sprawdź czy /api/setup jest dostępny bez logowania.` };
+    const body = await res.text();
+    console.log(`[createTenant] setup API response: status=${res.status} content-type=${contentType} body=${body.slice(0, 300)}`);
+
+    if (!contentType.includes("application/json")) {
+      const isVercelProtection = body.includes("Vercel") && (body.includes("login") || body.includes("Authentication") || body.includes("<!DOCTYPE"));
+      if (isVercelProtection) {
+        return {
+          error: `Vercel Deployment Protection blokuje ${setupUrl}. ` +
+            `Wyłącz ochronę dla projektu marketing-runner w Vercel Dashboard (Settings → Deployment Protection) ` +
+            `lub dodaj zmienną VERCEL_AUTOMATION_BYPASS_SECRET i przekaż nagłówek x-vercel-protection-bypass.`
+        };
       }
+      return {
+        error: `Aplikacja (${setupUrl}) zwróciła ${res.status} z content-type "${contentType}" zamiast JSON. ` +
+          `Treść odpowiedzi: ${body.slice(0, 200)}`
+      };
+    }
+    if (!res.ok) {
       return { error: `Błąd tworzenia konta admina (${res.status}): ${body}` };
     }
   } catch (e) {
-    return { error: `Nie można połączyć się z aplikacją (${product.appUrl}): ${e}` };
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[createTenant] setup API fetch error:`, msg);
+    return { error: `Nie można połączyć się z aplikacją (${setupUrl}): ${msg}` };
   }
 
   revalidatePath(`/dashboard/products/${productId}`);
@@ -192,6 +217,34 @@ export async function updateProduct(
 
   revalidatePath(`/dashboard/products/${productId}`);
   return { error: "" };
+}
+
+export async function deleteProduct(productId: string, _formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const tenantRows = await db
+    .select({ id: tenants.id, slug: tenants.slug, customDomain: tenants.customDomain })
+    .from(tenants)
+    .where(eq(tenants.productId, productId));
+
+  const [product] = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+
+  for (const tenant of tenantRows) {
+    if (product) {
+      try { await removeDomain(product.vercelProjectId, `${tenant.slug}.${product.baseDomain}`); } catch {}
+      if (tenant.customDomain) {
+        try { await removeDomain(product.vercelProjectId, tenant.customDomain); } catch {}
+      }
+    }
+    await db.delete(tenantOnboardings).where(eq(tenantOnboardings.tenantId, tenant.id));
+    await db.delete(tenants).where(eq(tenants.id, tenant.id));
+  }
+
+  await db.delete(products).where(eq(products.id, productId));
+
+  revalidatePath("/dashboard/products");
+  redirect("/dashboard/products");
 }
 
 export async function deleteTenant(tenantId: string, _formData: FormData) {
