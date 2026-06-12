@@ -54,22 +54,6 @@ export default function NewProductPage() {
 
         <div>
           <label className={labelClass}>
-            Vercel Token <span className="text-destructive">*</span>
-          </label>
-          <input
-            name="vercelToken"
-            type="password"
-            className={fieldClass}
-            placeholder="••••••••••••••••••••"
-            required
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Token z dostępem do projektu (Account Settings → Tokens).
-          </p>
-        </div>
-
-        <div>
-          <label className={labelClass}>
             Domena bazowa <span className="text-destructive">*</span>
           </label>
           <input

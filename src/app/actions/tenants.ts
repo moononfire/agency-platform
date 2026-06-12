@@ -17,19 +17,18 @@ export async function createProduct(
 
   const name = (formData.get("name") as string)?.trim();
   const vercelProjectId = (formData.get("vercelProjectId") as string)?.trim();
-  const vercelToken = (formData.get("vercelToken") as string)?.trim();
   const baseDomain = (formData.get("baseDomain") as string)?.trim().toLowerCase();
   let appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
   if (appUrl && !appUrl.startsWith("http")) appUrl = `https://${appUrl}`;
 
-  if (!name || !vercelProjectId || !vercelToken || !baseDomain || !appUrl) {
+  if (!name || !vercelProjectId || !baseDomain || !appUrl) {
     return { error: "Wypełnij wszystkie pola" };
   }
 
   const type = (formData.get("type") as "hair" | "courses") || "hair";
 
   const id = crypto.randomUUID();
-  await db.insert(products).values({ id, name, type, vercelProjectId, vercelToken, baseDomain, appUrl });
+  await db.insert(products).values({ id, name, type, vercelProjectId, baseDomain, appUrl });
 
   revalidatePath("/dashboard/products");
   redirect(`/dashboard/products/${id}`);
@@ -116,22 +115,14 @@ export async function createTenant(
   });
 
   try {
-    await addDomain(
-      product.vercelProjectId,
-      product.vercelToken,
-      `${slug}.${product.baseDomain}`
-    );
+    await addDomain(product.vercelProjectId, `${slug}.${product.baseDomain}`);
   } catch (e) {
     console.error("Failed to add subdomain:", e);
   }
 
   if (customDomain) {
     try {
-      await addDomain(
-        product.vercelProjectId,
-        product.vercelToken,
-        customDomain
-      );
+      await addDomain(product.vercelProjectId, customDomain);
     } catch (e) {
       console.error("Failed to add custom domain:", e);
     }
@@ -194,6 +185,7 @@ export async function updateProduct(
   if (!session?.user) throw new Error("Unauthorized");
 
   const appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
+
   if (!appUrl) return { error: "Podaj URL aplikacji" };
 
   await db.update(products).set({ appUrl }).where(eq(products.id, productId));
@@ -222,22 +214,14 @@ export async function deleteTenant(tenantId: string, _formData: FormData) {
 
   if (product) {
     try {
-      await removeDomain(
-        product.vercelProjectId,
-        product.vercelToken,
-        `${tenant.slug}.${product.baseDomain}`
-      );
+      await removeDomain(product.vercelProjectId, `${tenant.slug}.${product.baseDomain}`);
     } catch (e) {
       console.error("Failed to remove subdomain:", e);
     }
 
     if (tenant.customDomain) {
       try {
-        await removeDomain(
-          product.vercelProjectId,
-          product.vercelToken,
-          tenant.customDomain
-        );
+        await removeDomain(product.vercelProjectId, tenant.customDomain);
       } catch (e) {
         console.error("Failed to remove custom domain:", e);
       }

@@ -85,22 +85,14 @@ export default async function DomainPage({
 
   if (product) {
     try {
-      subdomainData = await getDomainStatus(
-        product.vercelProjectId,
-        product.vercelToken,
-        subdomain
-      );
+      subdomainData = await getDomainStatus(product.vercelProjectId, subdomain);
     } catch {
       // ignore
     }
 
     if (tenant.customDomain) {
       try {
-        customDomainData = await getDomainStatus(
-          product.vercelProjectId,
-          product.vercelToken,
-          tenant.customDomain
-        );
+        customDomainData = await getDomainStatus(product.vercelProjectId, tenant.customDomain);
       } catch {
         // ignore
       }

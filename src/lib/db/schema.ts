@@ -21,7 +21,7 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   type: productTypeEnum("type").default("hair").notNull(),
   vercelProjectId: text("vercel_project_id").notNull(),
-  vercelToken: text("vercel_token").notNull(),
+  vercelToken: text("vercel_token"),
   baseDomain: text("base_domain").notNull(),
   appUrl: text("app_url").notNull().default(""),
   createdAt: timestamp("created_at").defaultNow(),

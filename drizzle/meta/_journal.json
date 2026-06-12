@@ -15,6 +15,13 @@
       "when": 1781092011845,
       "tag": "0001_big_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781302107198,
+      "tag": "0002_drop_vercel_token_notnull",
+      "breakpoints": true
     }
   ]
 }
