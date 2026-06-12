@@ -12,11 +12,14 @@ export const tenantStatusEnum = pgEnum("tenant_status", [
   "suspended",
 ]);
 
+export const productTypeEnum = pgEnum("product_type", ["hair", "courses"]);
+
 export const products = pgTable("products", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
+  type: productTypeEnum("type").default("hair").notNull(),
   vercelProjectId: text("vercel_project_id").notNull(),
   vercelToken: text("vercel_token").notNull(),
   baseDomain: text("base_domain").notNull(),
@@ -41,6 +44,8 @@ export const tenants = pgTable("tenants", {
   address: text("address"),
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),
+  stripeSecretKey: text("stripe_secret_key"),
+  stripePublishableKey: text("stripe_publishable_key"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

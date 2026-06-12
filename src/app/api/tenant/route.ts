@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     businessName: tenants.businessName,
     logoUrl: tenants.logoUrl,
     primaryColor: tenants.primaryColor,
+    stripePublishableKey: tenants.stripePublishableKey,
   };
 
   // Match by custom domain or by subdomain pattern (slug.baseDomain)
@@ -72,5 +73,6 @@ export async function GET(request: NextRequest) {
     businessName: match.businessName,
     logoUrl: match.logoUrl ?? null,
     primaryColor: match.primaryColor ?? null,
+    stripePublishableKey: match.stripePublishableKey ?? null,
   });
 }

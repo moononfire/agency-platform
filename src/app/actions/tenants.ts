@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { products, tenants, tenantOnboardings } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { addDomain, removeDomain } from "@/lib/vercel-api";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -26,8 +26,10 @@ export async function createProduct(
     return { error: "Wypełnij wszystkie pola" };
   }
 
+  const type = (formData.get("type") as "hair" | "courses") || "hair";
+
   const id = crypto.randomUUID();
-  await db.insert(products).values({ id, name, vercelProjectId, vercelToken, baseDomain, appUrl });
+  await db.insert(products).values({ id, name, type, vercelProjectId, vercelToken, baseDomain, appUrl });
 
   revalidatePath("/dashboard/products");
   redirect(`/dashboard/products/${id}`);
@@ -62,6 +64,10 @@ export async function createTenant(
   const adminName = (formData.get("adminName") as string)?.trim();
   const adminEmail = (formData.get("adminEmail") as string)?.trim();
   const adminPassword = (formData.get("adminPassword") as string)?.trim();
+  const stripeSecretKey =
+    (formData.get("stripeSecretKey") as string)?.trim() || undefined;
+  const stripePublishableKey =
+    (formData.get("stripePublishableKey") as string)?.trim() || undefined;
 
   if (!businessName || !email || !slug) {
     return { error: "Wypełnij wymagane pola: nazwa firmy, email, subdomena" };
@@ -79,11 +85,11 @@ export async function createTenant(
   const existing = await db
     .select({ id: tenants.id })
     .from(tenants)
-    .where(eq(tenants.slug, slug))
+    .where(and(eq(tenants.slug, slug), eq(tenants.productId, productId)))
     .limit(1);
 
   if (existing.length > 0) {
-    return { error: "Ta subdomena jest już zajęta" };
+    return { error: "Ta subdomena jest już zajęta w tym produkcie" };
   }
 
   const tenantId = crypto.randomUUID();
@@ -100,6 +106,8 @@ export async function createTenant(
     address,
     logoUrl,
     primaryColor,
+    stripeSecretKey,
+    stripePublishableKey,
   });
 
   await db.insert(tenantOnboardings).values({
@@ -158,6 +166,7 @@ export async function createTenant(
         adminEmail,
         adminPassword,
         services: (formData.get("services") as string) || "",
+        stripePublishableKey: stripePublishableKey ?? "",
       }),
     });
     const contentType = res.headers.get("content-type") ?? "";

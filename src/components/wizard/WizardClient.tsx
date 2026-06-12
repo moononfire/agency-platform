@@ -48,10 +48,12 @@ function StepIndicator({ current }: { current: number }) {
 export function WizardClient({
   productId,
   baseDomain,
+  productType,
 }: {
   productId: string;
   productName: string;
   baseDomain: string;
+  productType: "hair" | "courses";
 }) {
   const [step, setStep] = useQueryState(
     "step",
@@ -99,6 +101,8 @@ export function WizardClient({
     parseAsString.withDefault("")
   );
   const [adminPassword, setAdminPassword] = useState("");
+  const [stripeSecretKey, setStripeSecretKey] = useState("");
+  const [stripePublishableKey, setStripePublishableKey] = useState("");
 
   const boundAction = createTenant.bind(null, productId);
   const [state, action, pending] = useActionState(boundAction, null);
@@ -283,7 +287,7 @@ export function WizardClient({
         </div>
       )}
 
-      {step === 5 && (
+      {step === 5 && productType === "hair" && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Usługi startowe</h2>
           <p className="text-sm text-muted-foreground">
@@ -317,6 +321,53 @@ export function WizardClient({
               ← Wstecz
             </Button>
             <Button onClick={next}>Dalej →</Button>
+          </div>
+        </div>
+      )}
+
+      {step === 5 && productType === "courses" && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Płatności Stripe</h2>
+          <p className="text-sm text-muted-foreground">
+            Znajdziesz je w Stripe Dashboard → Developers → API keys.
+            Możesz użyć kluczy testowych (sk_test_...) na początku.
+          </p>
+          <div>
+            <label className={labelClass}>
+              Secret Key <span className="text-destructive">*</span>
+            </label>
+            <input
+              className={fieldClass}
+              type="password"
+              value={stripeSecretKey}
+              onChange={(e) => setStripeSecretKey(e.target.value)}
+              placeholder="sk_live_... lub sk_test_..."
+            />
+          </div>
+          <div>
+            <label className={labelClass}>
+              Publishable Key <span className="text-destructive">*</span>
+            </label>
+            <input
+              className={fieldClass}
+              value={stripePublishableKey}
+              onChange={(e) => setStripePublishableKey(e.target.value)}
+              placeholder="pk_live_... lub pk_test_..."
+            />
+          </div>
+          <div className="flex justify-between pt-2">
+            <Button variant="outline" onClick={prev}>
+              ← Wstecz
+            </Button>
+            <Button
+              onClick={next}
+              disabled={
+                !stripeSecretKey.startsWith("sk_") ||
+                !stripePublishableKey.startsWith("pk_")
+              }
+            >
+              Dalej →
+            </Button>
           </div>
         </div>
       )}
@@ -411,6 +462,9 @@ export function WizardClient({
               />
             )}
             <Row label="Admin" value={adminEmail} />
+            {productType === "courses" && stripePublishableKey && (
+              <Row label="Stripe" value={stripePublishableKey} mono />
+            )}
           </div>
 
           {state?.error && (
@@ -435,6 +489,8 @@ export function WizardClient({
             <input type="hidden" name="adminName" value={adminName} />
             <input type="hidden" name="adminEmail" value={adminEmail} />
             <input type="hidden" name="adminPassword" value={adminPassword} />
+            <input type="hidden" name="stripeSecretKey" value={stripeSecretKey} />
+            <input type="hidden" name="stripePublishableKey" value={stripePublishableKey} />
             <div className="flex justify-between pt-2">
               <Button
                 type="button"
