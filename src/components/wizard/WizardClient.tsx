@@ -115,8 +115,11 @@ export function WizardClient({
           </div>
           <div>
             <label className={labelClass}>
-              Email <span className="text-destructive">*</span>
+              Email kontaktowy <span className="text-destructive">*</span>
             </label>
+            <p className="text-xs text-muted-foreground -mt-1 mb-1">
+              Tylko dane kontaktowe — nie służy do logowania.
+            </p>
             <input
               className={fieldClass}
               type="email"
@@ -158,6 +161,11 @@ export function WizardClient({
       {step === 2 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Subdomena</h2>
+          <p className="text-sm text-muted-foreground">
+            Subdomena to tylko adres strony klienta — nie ma związku z
+            logowaniem. Dane do logowania ustawisz w kroku &quot;Konto
+            admina&quot;.
+          </p>
           <div>
             <label className={labelClass}>
               Subdomena <span className="text-destructive">*</span>
@@ -276,7 +284,9 @@ export function WizardClient({
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Konto admina</h2>
           <p className="text-sm text-muted-foreground">
-            Pierwsze konto do logowania w aplikacji klienta.
+            To dane logowania klienta do jego aplikacji (inny system niż ten
+            panel). Tworzą nowego użytkownika w aplikacji klienta — email i
+            hasło poniżej, nie subdomena.
           </p>
           <div>
             <label className={labelClass}>
@@ -332,7 +342,7 @@ export function WizardClient({
           <h2 className="text-lg font-semibold">Potwierdzenie</h2>
           <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
             <Row label="Firma" value={businessName} />
-            <Row label="Email" value={email} />
+            <Row label="Email kontaktowy" value={email} />
             {phone && <Row label="Telefon" value={phone} />}
             {address && <Row label="Adres" value={address} />}
             <Row
@@ -355,7 +365,7 @@ export function WizardClient({
                 </div>
               </div>
             )}
-            <Row label="Admin" value={adminEmail} />
+            <Row label="Email logowania (admin)" value={adminEmail} />
           </div>
 
           {state?.error && (

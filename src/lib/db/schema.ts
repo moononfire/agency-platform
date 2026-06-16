@@ -37,6 +37,10 @@ export const tenants = pgTable("tenants", {
   schemaVersion: text("schema_version").default("1"),
   businessName: text("business_name").notNull(),
   email: text("email").notNull(),
+  // Email konta admina w aplikacji klienta (login + hasło tworzone przez
+  // /api/setup produktu). To inne logowanie niż `email` powyżej (kontakt
+  // firmy) i inne niż `slug` (który tylko wybiera subdomenę, nie loguje).
+  adminEmail: text("admin_email"),
   phone: text("phone"),
   address: text("address"),
   logoUrl: text("logo_url"),

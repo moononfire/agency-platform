@@ -97,7 +97,10 @@ export default async function ClientPage({
             Dane firmy
           </h2>
           <dl className="space-y-3 text-sm">
-            <Field label="Email" value={tenant.email} />
+            <Field label="Email kontaktowy" value={tenant.email} />
+            {tenant.adminEmail && (
+              <Field label="Email logowania" value={tenant.adminEmail} />
+            )}
             {tenant.phone && <Field label="Telefon" value={tenant.phone} />}
             {tenant.address && <Field label="Adres" value={tenant.address} />}
             {tenant.primaryColor && (
@@ -124,6 +127,9 @@ export default async function ClientPage({
             </span>
             Domeny
           </h2>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Adres strony klienta — bez związku z logowaniem.
+          </p>
           <dl className="space-y-3 text-sm">
             <div className="flex items-start gap-2">
               <dt className="text-muted-foreground w-28 shrink-0">Subdomena</dt>

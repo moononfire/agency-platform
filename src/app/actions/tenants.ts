@@ -110,6 +110,7 @@ export async function createTenant(
       status: "pending",
       businessName,
       email,
+      adminEmail,
       phone,
       address,
       logoUrl,
