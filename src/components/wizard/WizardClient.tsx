@@ -7,17 +7,6 @@ import { Button } from "@/components/ui/button";
 
 const TOTAL_STEPS = 7;
 
-const SERVICES = [
-  "Strzyżenie damskie",
-  "Strzyżenie męskie",
-  "Koloryzacja",
-  "Pielęgnacja brody",
-  "Manicure",
-  "Pedicure",
-  "Masaż",
-  "Makijaż",
-];
-
 function StepIndicator({ current }: { current: number }) {
   return (
     <div className="flex items-center gap-2 mb-8">
@@ -48,12 +37,10 @@ function StepIndicator({ current }: { current: number }) {
 export function WizardClient({
   productId,
   baseDomain,
-  productType,
 }: {
   productId: string;
   productName: string;
   baseDomain: string;
-  productType: "hair" | "courses";
 }) {
   const [step, setStep] = useQueryState(
     "step",
@@ -88,10 +75,6 @@ export function WizardClient({
     "pc",
     parseAsString.withDefault("#3b82f6")
   );
-  const [services, setServices] = useQueryState(
-    "sv",
-    parseAsString.withDefault("")
-  );
   const [adminName, setAdminName] = useQueryState(
     "an",
     parseAsString.withDefault("")
@@ -104,20 +87,6 @@ export function WizardClient({
 
   const boundAction = createTenant.bind(null, productId);
   const [state, action, pending] = useActionState(boundAction, null);
-
-  const selectedServices = services
-    ? services.split(",").filter(Boolean)
-    : [];
-
-  const toggleService = (svc: string) => {
-    const current = new Set(selectedServices);
-    if (current.has(svc)) {
-      current.delete(svc);
-    } else {
-      current.add(svc);
-    }
-    setServices([...current].join(","));
-  };
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
@@ -285,45 +254,7 @@ export function WizardClient({
         </div>
       )}
 
-      {step === 5 && productType === "hair" && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Usługi startowe</h2>
-          <p className="text-sm text-muted-foreground">
-            Wybierz usługi do aktywacji od razu.
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {SERVICES.map((svc) => {
-              const checked = selectedServices.includes(svc);
-              return (
-                <label
-                  key={svc}
-                  className={`flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
-                    checked
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:bg-gray-50"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleService(svc)}
-                    className="accent-primary"
-                  />
-                  <span className="text-sm">{svc}</span>
-                </label>
-              );
-            })}
-          </div>
-          <div className="flex justify-between pt-2">
-            <Button variant="outline" onClick={prev}>
-              ← Wstecz
-            </Button>
-            <Button onClick={next}>Dalej →</Button>
-          </div>
-        </div>
-      )}
-
-      {step === 5 && productType === "courses" && (
+      {step === 5 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Płatności Stripe</h2>
           <p className="text-sm text-muted-foreground">
@@ -424,12 +355,6 @@ export function WizardClient({
                 </div>
               </div>
             )}
-            {selectedServices.length > 0 && (
-              <Row
-                label="Usługi"
-                value={selectedServices.join(", ")}
-              />
-            )}
             <Row label="Admin" value={adminEmail} />
           </div>
 
@@ -451,7 +376,6 @@ export function WizardClient({
             <input type="hidden" name="customDomain" value={customDomain} />
             <input type="hidden" name="logoUrl" value={logoUrl} />
             <input type="hidden" name="primaryColor" value={primaryColor} />
-            <input type="hidden" name="services" value={services} />
             <input type="hidden" name="adminName" value={adminName} />
             <input type="hidden" name="adminEmail" value={adminEmail} />
             <input type="hidden" name="adminPassword" value={adminPassword} />

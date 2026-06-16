@@ -34,7 +34,6 @@ export default async function NewClientPage({
         productId={id}
         productName={product.name}
         baseDomain={product.baseDomain}
-        productType={product.type}
       />
     </div>
   );

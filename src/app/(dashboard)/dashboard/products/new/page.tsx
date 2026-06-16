@@ -82,16 +82,6 @@ export default function NewProductPage() {
           </p>
         </div>
 
-        <div>
-          <label className={labelClass}>
-            Typ produktu <span className="text-destructive">*</span>
-          </label>
-          <select name="type" className={fieldClass} defaultValue="hair">
-            <option value="hair">HairSaaS — salony fryzjerskie</option>
-            <option value="courses">CourseSaaS — kursy wideo</option>
-          </select>
-        </div>
-
         {state?.error && (
           <p className="text-sm text-destructive rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
             {state.error}

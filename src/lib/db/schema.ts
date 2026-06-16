@@ -12,14 +12,11 @@ export const tenantStatusEnum = pgEnum("tenant_status", [
   "suspended",
 ]);
 
-export const productTypeEnum = pgEnum("product_type", ["hair", "courses"]);
-
 export const products = pgTable("products", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
-  type: productTypeEnum("type").default("hair").notNull(),
   vercelProjectId: text("vercel_project_id").notNull(),
   vercelToken: text("vercel_token"),
   baseDomain: text("base_domain").notNull(),

@@ -25,10 +25,8 @@ export async function createProduct(
     return { error: "Wypełnij wszystkie pola" };
   }
 
-  const type = (formData.get("type") as "hair" | "courses") || "hair";
-
   const id = crypto.randomUUID();
-  await db.insert(products).values({ id, name, type, vercelProjectId, baseDomain, appUrl });
+  await db.insert(products).values({ id, name, vercelProjectId, baseDomain, appUrl });
 
   revalidatePath("/dashboard/products");
   redirect(`/dashboard/products/${id}`);
