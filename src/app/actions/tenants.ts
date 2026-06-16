@@ -86,81 +86,86 @@ export async function createTenant(
   }
 
   const tenantId = crypto.randomUUID();
-
-  await db.insert(tenants).values({
-    id: tenantId,
-    productId,
-    slug,
-    customDomain,
-    status: "pending",
-    businessName,
-    email,
-    phone,
-    address,
-    logoUrl,
-    primaryColor,
-  });
-
-  await db.insert(tenantOnboardings).values({
-    tenantId,
-    currentStep: "6",
-  });
-
   const subdomain = `${slug}.${product.baseDomain}`;
-  try {
-    await addDomain(product.vercelProjectId, subdomain);
-    console.log(`[createTenant] subdomain added: ${subdomain}`);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error(`[createTenant] Failed to add subdomain ${subdomain}:`, msg);
-    if (msg.includes("nieważny") || msg.includes("invalidToken") || msg.includes("403")) {
-      return { error: `Nie można dodać subdomeny: ${msg}` };
-    }
-  }
 
-  if (customDomain) {
+  // Cała operacja musi być atomowa: jeśli którykolwiek krok zawiedzie,
+  // wycofujemy wszystko co zdążyliśmy stworzyć (domeny w Vercel, wiersze w bazie),
+  // żeby nie zostawić klienta w stanie "częściowo utworzony".
+  let subdomainAdded = false;
+  let customDomainAdded = false;
+
+  try {
+    await db.insert(tenants).values({
+      id: tenantId,
+      productId,
+      slug,
+      customDomain,
+      status: "pending",
+      businessName,
+      email,
+      phone,
+      address,
+      logoUrl,
+      primaryColor,
+    });
+
+    await db.insert(tenantOnboardings).values({
+      tenantId,
+      currentStep: "6",
+    });
+
     try {
-      await addDomain(product.vercelProjectId, customDomain);
-      console.log(`[createTenant] custom domain added: ${customDomain}`);
+      await addDomain(product.vercelProjectId, subdomain);
+      subdomainAdded = true;
+      console.log(`[createTenant] subdomain added: ${subdomain}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[createTenant] Failed to add custom domain ${customDomain}:`, msg);
+      console.error(`[createTenant] Failed to add subdomain ${subdomain}:`, msg);
+      throw new Error(`Nie można dodać subdomeny: ${msg}`);
     }
-  }
 
-  await db
-    .update(tenants)
-    .set({ status: "active" })
-    .where(eq(tenants.id, tenantId));
+    if (customDomain) {
+      try {
+        await addDomain(product.vercelProjectId, customDomain);
+        customDomainAdded = true;
+        console.log(`[createTenant] custom domain added: ${customDomain}`);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[createTenant] Failed to add custom domain ${customDomain}:`, msg);
+        throw new Error(`Nie można dodać własnej domeny: ${msg}`);
+      }
+    }
 
-  await db
-    .update(tenantOnboardings)
-    .set({ completedAt: new Date() })
-    .where(eq(tenantOnboardings.tenantId, tenantId));
+    const agencySecret = process.env.AGENCY_API_SECRET;
+    if (!agencySecret) {
+      throw new Error("Brak AGENCY_API_SECRET w zmiennych środowiskowych agencji");
+    }
 
-  const agencySecret = process.env.AGENCY_API_SECRET;
-  if (!agencySecret) {
-    return { error: "Brak AGENCY_API_SECRET w zmiennych środowiskowych agencji" };
-  }
+    const setupUrl = `${product.appUrl}/api/setup`;
+    console.log(`[createTenant] calling setup API: ${setupUrl}`);
+    let res: Response;
+    try {
+      res = await fetch(setupUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-agency-secret": agencySecret,
+        },
+        body: JSON.stringify({
+          tenantId,
+          slug,
+          adminName,
+          adminEmail,
+          adminPassword,
+          services: (formData.get("services") as string) || "",
+        }),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[createTenant] setup API fetch error:`, msg);
+      throw new Error(`Nie można połączyć się z aplikacją (${setupUrl}): ${msg}`);
+    }
 
-  const setupUrl = `${product.appUrl}/api/setup`;
-  console.log(`[createTenant] calling setup API: ${setupUrl}`);
-  try {
-    const res = await fetch(setupUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-agency-secret": agencySecret,
-      },
-      body: JSON.stringify({
-        tenantId,
-        slug,
-        adminName,
-        adminEmail,
-        adminPassword,
-        services: (formData.get("services") as string) || "",
-      }),
-    });
     const contentType = res.headers.get("content-type") ?? "";
     const body = await res.text();
     console.log(`[createTenant] setup API response: status=${res.status} content-type=${contentType} body=${body.slice(0, 300)}`);
@@ -168,24 +173,60 @@ export async function createTenant(
     if (!contentType.includes("application/json")) {
       const isVercelProtection = body.includes("Vercel") && (body.includes("login") || body.includes("Authentication") || body.includes("<!DOCTYPE"));
       if (isVercelProtection) {
-        return {
-          error: `Vercel Deployment Protection blokuje ${setupUrl}. ` +
+        throw new Error(
+          `Vercel Deployment Protection blokuje ${setupUrl}. ` +
             `Wyłącz ochronę dla projektu marketing-runner w Vercel Dashboard (Settings → Deployment Protection) ` +
             `lub dodaj zmienną VERCEL_AUTOMATION_BYPASS_SECRET i przekaż nagłówek x-vercel-protection-bypass.`
-        };
+        );
       }
-      return {
-        error: `Aplikacja (${setupUrl}) zwróciła ${res.status} z content-type "${contentType}" zamiast JSON. ` +
+      throw new Error(
+        `Aplikacja (${setupUrl}) zwróciła ${res.status} z content-type "${contentType}" zamiast JSON. ` +
           `Treść odpowiedzi: ${body.slice(0, 200)}`
-      };
+      );
     }
     if (!res.ok) {
-      return { error: `Błąd tworzenia konta admina (${res.status}): ${body}` };
+      throw new Error(`Błąd tworzenia konta admina (${res.status}): ${body}`);
     }
+
+    await db
+      .update(tenants)
+      .set({ status: "active" })
+      .where(eq(tenants.id, tenantId));
+
+    await db
+      .update(tenantOnboardings)
+      .set({ completedAt: new Date() })
+      .where(eq(tenantOnboardings.tenantId, tenantId));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error(`[createTenant] setup API fetch error:`, msg);
-    return { error: `Nie można połączyć się z aplikacją (${setupUrl}): ${msg}` };
+    console.error(`[createTenant] aborting, rolling back:`, msg);
+
+    if (subdomainAdded) {
+      try {
+        await removeDomain(product.vercelProjectId, subdomain);
+      } catch (cleanupErr) {
+        console.error(`[createTenant] rollback: failed to remove subdomain ${subdomain}:`, cleanupErr);
+      }
+    }
+    if (customDomainAdded && customDomain) {
+      try {
+        await removeDomain(product.vercelProjectId, customDomain);
+      } catch (cleanupErr) {
+        console.error(`[createTenant] rollback: failed to remove custom domain ${customDomain}:`, cleanupErr);
+      }
+    }
+    try {
+      await db.delete(tenantOnboardings).where(eq(tenantOnboardings.tenantId, tenantId));
+    } catch (cleanupErr) {
+      console.error(`[createTenant] rollback: failed to delete onboarding row:`, cleanupErr);
+    }
+    try {
+      await db.delete(tenants).where(eq(tenants.id, tenantId));
+    } catch (cleanupErr) {
+      console.error(`[createTenant] rollback: failed to delete tenant row:`, cleanupErr);
+    }
+
+    return { error: msg };
   }
 
   revalidatePath(`/dashboard/products/${productId}`);
