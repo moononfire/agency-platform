@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { products, tenants, tenantOnboardings } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { addDomain, removeDomain } from "@/lib/vercel-api";
+import { addDomain, removeDomain, getProject } from "@/lib/vercel-api";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -23,6 +23,13 @@ export async function createProduct(
 
   if (!name || !vercelProjectId || !baseDomain || !appUrl) {
     return { error: "Wypełnij wszystkie pola" };
+  }
+
+  try {
+    await getProject(vercelProjectId);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: `Nie znaleziono projektu Vercel "${vercelProjectId}": ${msg}` };
   }
 
   const id = crypto.randomUUID();
@@ -157,6 +164,13 @@ export async function createTenant(
           adminName,
           adminEmail,
           adminPassword,
+          // Niektóre produkty (np. chicken-of-the-city) mają inny kontrakt
+          // /api/setup: { slug, businessName, email, password }. Wysyłamy
+          // oba zestawy pól — nadmiarowe pola są ignorowane przez produkty
+          // korzystające z kontraktu adminName/adminEmail/adminPassword.
+          businessName,
+          email,
+          password: adminPassword,
           services: (formData.get("services") as string) || "",
         }),
       });
@@ -242,10 +256,22 @@ export async function updateProduct(
   if (!session?.user) throw new Error("Unauthorized");
 
   const appUrl = (formData.get("appUrl") as string)?.trim().replace(/\/$/, "");
+  const vercelProjectId = (formData.get("vercelProjectId") as string)?.trim();
 
   if (!appUrl) return { error: "Podaj URL aplikacji" };
+  if (!vercelProjectId) return { error: "Podaj Vercel Project ID" };
 
-  await db.update(products).set({ appUrl }).where(eq(products.id, productId));
+  try {
+    await getProject(vercelProjectId);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: `Nie znaleziono projektu Vercel "${vercelProjectId}": ${msg}` };
+  }
+
+  await db
+    .update(products)
+    .set({ appUrl, vercelProjectId })
+    .where(eq(products.id, productId));
 
   revalidatePath(`/dashboard/products/${productId}`);
   return { error: "" };

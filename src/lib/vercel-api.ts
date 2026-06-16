@@ -33,6 +33,10 @@ async function vercelFetch(path: string, options: RequestInit = {}) {
   return res.json();
 }
 
+export async function getProject(projectId: string) {
+  return vercelFetch(`/v9/projects/${projectId}`);
+}
+
 export async function addDomain(projectId: string, domain: string) {
   return vercelFetch(`/v10/projects/${projectId}/domains`, {
     method: "POST",

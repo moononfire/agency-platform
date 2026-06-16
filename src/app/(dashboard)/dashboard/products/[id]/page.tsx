@@ -62,7 +62,11 @@ export default async function ProductPage({
         </Link>
       </div>
 
-      <EditAppUrlForm productId={id} currentAppUrl={product.appUrl} />
+      <EditAppUrlForm
+        productId={id}
+        currentAppUrl={product.appUrl}
+        currentVercelProjectId={product.vercelProjectId}
+      />
 
       {rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-2xl border border-dashed">
