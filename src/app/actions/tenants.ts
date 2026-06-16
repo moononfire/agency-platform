@@ -63,10 +63,6 @@ export async function createTenant(
   const adminName = (formData.get("adminName") as string)?.trim();
   const adminEmail = (formData.get("adminEmail") as string)?.trim();
   const adminPassword = (formData.get("adminPassword") as string)?.trim();
-  const stripeSecretKey =
-    (formData.get("stripeSecretKey") as string)?.trim() || undefined;
-  const stripePublishableKey =
-    (formData.get("stripePublishableKey") as string)?.trim() || undefined;
 
   if (!businessName || !email || !slug) {
     return { error: "Wypełnij wymagane pola: nazwa firmy, email, subdomena" };
@@ -105,8 +101,6 @@ export async function createTenant(
     address,
     logoUrl,
     primaryColor,
-    stripeSecretKey,
-    stripePublishableKey,
   });
 
   await db.insert(tenantOnboardings).values({
@@ -167,7 +161,6 @@ export async function createTenant(
         adminEmail,
         adminPassword,
         services: (formData.get("services") as string) || "",
-        stripePublishableKey: stripePublishableKey ?? "",
       }),
     });
     const contentType = res.headers.get("content-type") ?? "";

@@ -46,6 +46,7 @@ export const tenants = pgTable("tenants", {
   primaryColor: text("primary_color"),
   stripeSecretKey: text("stripe_secret_key"),
   stripePublishableKey: text("stripe_publishable_key"),
+  stripeAccountId: text("stripe_account_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

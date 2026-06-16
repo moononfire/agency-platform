@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { deleteTenant } from "@/app/actions/tenants";
 import { DeleteClientButton } from "@/components/DeleteClientButton";
+import { buildAuthorizeUrl } from "@/lib/stripe-connect";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Oczekuje",
@@ -23,10 +24,21 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default async function ClientPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ stripe?: string; stripe_error?: string }>;
 }) {
   const { id } = await params;
+  const { stripe: stripeStatus, stripe_error: stripeError } = await searchParams;
+
+  let stripeConnectUrl: string | null = null;
+  let stripeConnectConfigError: string | null = null;
+  try {
+    stripeConnectUrl = buildAuthorizeUrl(id);
+  } catch (e) {
+    stripeConnectConfigError = e instanceof Error ? e.message : String(e);
+  }
 
   const [tenant] = await db
     .select()
@@ -130,6 +142,54 @@ export default async function ClientPage({
             </Button>
           </Link>
         </div>
+      </div>
+
+      {stripeStatus === "connected" && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          Konto Stripe zostało połączone.
+        </div>
+      )}
+      {stripeStatus === "error" && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Nie udało się połączyć Stripe{stripeError ? `: ${stripeError}` : ""}.
+        </div>
+      )}
+
+      <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+        <h2 className="font-semibold text-foreground flex items-center gap-2">
+          <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+          Stripe
+        </h2>
+        {tenant.stripeAccountId ? (
+          <div className="text-sm space-y-2">
+            <div className="flex items-center gap-2 text-emerald-700 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              Połączone konto Stripe
+            </div>
+            <p className="font-mono text-xs bg-muted px-2 py-1 rounded-md inline-block">
+              {tenant.stripeAccountId}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Klient nie ma jeszcze połączonego konta Stripe — przelewy nie mogą być realizowane.
+            </p>
+            {stripeConnectUrl ? (
+              <a href={stripeConnectUrl}>
+                <Button size="sm">Połącz Stripe</Button>
+              </a>
+            ) : (
+              <p className="text-xs text-amber-700">
+                Stripe Connect nie jest skonfigurowany ({stripeConnectConfigError}).
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {onboarding && (
