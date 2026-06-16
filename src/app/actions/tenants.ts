@@ -165,11 +165,12 @@ export async function createTenant(
           adminEmail,
           adminPassword,
           // Niektóre produkty (np. chicken-of-the-city) mają inny kontrakt
-          // /api/setup: { slug, businessName, email, password }. Wysyłamy
-          // oba zestawy pól — nadmiarowe pola są ignorowane przez produkty
+          // /api/setup: { slug, businessName, email, password } — tam email
+          // służy do logowania, więc wysyłamy adminEmail (nie kontaktowy
+          // email firmy). Nadmiarowe pola są ignorowane przez produkty
           // korzystające z kontraktu adminName/adminEmail/adminPassword.
           businessName,
-          email,
+          email: adminEmail,
           password: adminPassword,
           services: (formData.get("services") as string) || "",
         }),
