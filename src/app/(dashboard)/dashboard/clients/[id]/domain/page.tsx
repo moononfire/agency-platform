@@ -34,10 +34,17 @@ function extractDnsRecords(
   }
 
   const apexName = domainData?.apexName as string | undefined;
-  if (apexName && domainData?.name !== apexName) {
+  const fullName = domainData?.name as string | undefined;
+  if (apexName && fullName && fullName !== apexName) {
+    // Host must be the full name relative to the apex, not just the
+    // first label — e.g. for "abc.chicken.example.com" with apex
+    // "example.com" the host is "abc.chicken", not "abc".
+    const host = fullName.endsWith(`.${apexName}`)
+      ? fullName.slice(0, -(apexName.length + 1))
+      : fullName.split(".")[0];
     records.push({
       type: "CNAME",
-      host: (domainData?.name as string)?.split(".")[0] ?? "@",
+      host: host || "@",
       value: "cname.vercel-dns.com",
     });
   } else if (apexName) {
@@ -128,7 +135,7 @@ export default async function DomainPage({
           DNS jeszcze niezweryfikowany. Po skonfigurowaniu rekordów DNS
           weryfikacja następuje automatycznie (do 48h).{" "}
           <a
-            href="https://vercel.com/vs-projects-24dfb18b/hair-style/settings/domains"
+            href={`https://vercel.com/vs-projects-24dfb18b/${product?.vercelProjectId ?? ""}/settings/domains`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline font-medium"
